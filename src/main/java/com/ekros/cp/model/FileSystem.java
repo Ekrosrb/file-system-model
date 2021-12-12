@@ -1,5 +1,6 @@
 package com.ekros.cp.model;
 
+import com.ekros.cp.util.Log;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -7,10 +8,8 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.UUID;
 import java.util.stream.Collectors;
 import lombok.AllArgsConstructor;
-import lombok.Data;
 import lombok.Getter;
 
 @Getter
@@ -24,12 +23,13 @@ public class FileSystem implements Serializable {
   private final Map<Integer, Descriptor> fileDescriptors;
   private final List<Block> blocks;
   private final Descriptor directory;
-  private static final transient Map<Integer, Descriptor> openFiles = new HashMap<>();
+  private final Map<Integer, Descriptor> openFiles;
 
   public FileSystem() {
     directory = new Descriptor(true, null, null, 0);
     fileDescriptors = new HashMap<>();
     blocks = new ArrayList<>();
+    openFiles = new HashMap<>();
     init();
   }
 
@@ -57,13 +57,15 @@ public class FileSystem implements Serializable {
     return true;
   }
 
-  public void write(int fd, int offset, int size){
+  public boolean write(int fd, int offset, int size){
     if(!openFiles.containsKey(fd)){
       Log.error("Incorrect fd [" + fd + "]");
+      return false;
     }
     String data = getFileData(fd);
     if(size > data.length() || offset > data.length() || size+offset > data.length()){
       Log.error("Incorrect offset or size");
+      return false;
     }
     data = data.substring(0, offset) + "1".repeat(size) + data.substring(offset+size);
     int dataOffset = 0;
@@ -71,15 +73,18 @@ public class FileSystem implements Serializable {
         block.setData(data.substring(dataOffset, dataOffset + Block.MAX_BLOCK_SIZE));
         dataOffset += Block.MAX_BLOCK_SIZE;
     }
+    return true;
   }
 
   public String read(int fd, int offset, int size) {
     if(!openFiles.containsKey(fd)){
-      return "Incorrect fd";
+      Log.error("Incorrect fd");
+      return "";
     }
     String data = getFileData(fd);
     if(size > data.length() || offset > data.length()){
-      return "Incorrect offset or size";
+      Log.error("Incorrect offset or size");
+      return "";
     }
     return data.substring(offset, offset+size);
   }

@@ -1,7 +1,6 @@
 package com.ekros.cp.util;
 
 import com.ekros.cp.model.FileSystem;
-import com.ekros.cp.model.Log;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -14,7 +13,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class FSUtils {
 
-  private static FileSystem fileSystem;
+  public static FileSystem fileSystem;
 
   public static void mkfs(int n){
     fileSystem.format(n);
@@ -45,26 +44,34 @@ public class FSUtils {
     return status;
   }
 
-  public static void close(int fd) {
+  public static boolean close(int fd) {
     boolean status = fileSystem.closeFile(fd);
     if(status){
       Log.info("File with fd [" + fd + "] closed.");
     }else{
       Log.error("File with fd [" + fd + "] not found.");
     }
+    return status;
   }
 
-  public static void read(int fd, int offset, int size){
+  public static String read(int fd, int offset, int size){
     String data = fileSystem.read(fd, offset, size);
     Log.info(data);
+    return data;
   }
 
-  public static void whire(int fd, int offset, int size){
-    fileSystem.write(fd, offset, size);
+  public static boolean write(int fd, int offset, int size){
+    boolean status = fileSystem.write(fd, offset, size);
+    if(status){
+      Log.info("Write status: " + true);
+    }else{
+      Log.error("Write status: " + false);
+    }
     update();
+    return status;
   }
 
-  public static void truncate(String name, int size){
+  public static boolean truncate(String name, int size){
     boolean status = fileSystem.truncate(name, size);
     if(status){
       Log.info("Truncated [" + name + "] to " + size + " size.");
@@ -72,9 +79,10 @@ public class FSUtils {
       Log.error("Truncate failed.");
     }
     update();
+    return status;
   }
 
-  public static void link(String name1, String name2){
+  public static boolean link(String name1, String name2){
     boolean status = fileSystem.link(name1, name2);
     if(status){
       Log.info("Link [" + name1 + "] added.");
@@ -82,9 +90,10 @@ public class FSUtils {
       Log.error("Link [" + name2 + "] not found.");
     }
     update();
+    return status;
   }
 
-  public static void unlink(String name){
+  public static boolean unlink(String name){
     boolean status = fileSystem.unlink(name);
     if(status){
       Log.info("Link [" + name + "] removed.");
@@ -92,6 +101,7 @@ public class FSUtils {
       Log.error("Link [" + name + "] not found.");
     }
     update();
+    return status;
   }
 
   public static String fstat(int id){

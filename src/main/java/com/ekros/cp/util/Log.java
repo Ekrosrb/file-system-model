@@ -1,4 +1,4 @@
-package com.ekros.cp.model;
+package com.ekros.cp.util;
 
 public class Log {
   public static void info(String message){

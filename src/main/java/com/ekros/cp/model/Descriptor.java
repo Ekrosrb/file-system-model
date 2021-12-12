@@ -4,14 +4,12 @@ import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 import lombok.Getter;
-import lombok.Setter;
 import lombok.ToString;
 
 @ToString
 @Getter
 public class Descriptor implements Serializable {
   private final boolean isDirectory;
-  @Setter
   private int size;
   private final List<Integer> links;
   private final List<String> nameLinks;
@@ -21,7 +19,7 @@ public class Descriptor implements Serializable {
     this.links = new ArrayList<>();
     this.blockLinks = new ArrayList<>();
     this.isDirectory = isDirectory;
-    this.size = size;
+    this.size = formatSize(size);
     nameLinks = new ArrayList<>();
     if(blockLink != null){
       blockLinks.add(blockLink);
@@ -36,7 +34,11 @@ public class Descriptor implements Serializable {
   }
 
   public void setSize(int size){
-    this.size = (int) (Block.MAX_BLOCK_SIZE*(Math.ceil(Math.abs((double) size/Block.MAX_BLOCK_SIZE))));
+    this.size = formatSize(size);
+  }
+
+  public static int formatSize(int size){
+    return (int) (Block.MAX_BLOCK_SIZE*(Math.ceil(Math.abs((double) size/Block.MAX_BLOCK_SIZE))));
   }
 
 }

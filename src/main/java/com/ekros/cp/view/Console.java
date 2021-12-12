@@ -1,6 +1,6 @@
 package com.ekros.cp.view;
 
-import com.ekros.cp.model.Log;
+import com.ekros.cp.util.Log;
 import com.ekros.cp.util.FSUtils;
 import java.util.ArrayList;
 import java.util.List;
@@ -65,7 +65,7 @@ public class Console {
           FSUtils.read(toInt(command.next()), toInt(command.next()), toInt(command.next()));
           break;
         case "write":
-          FSUtils.whire(toInt(command.next()), toInt(command.next()), toInt(command.next()));
+          FSUtils.write(toInt(command.next()), toInt(command.next()), toInt(command.next()));
           break;
         case "truncate":
           FSUtils.truncate(command.next(), toInt(command.next()));
