@@ -70,6 +70,9 @@ public class Console {
         case "truncate":
           FSUtils.truncate(command.next(), toInt(command.next()));
           break;
+        case "clear":
+          Log.info("Clear status: " + FSUtils.clear());
+          break;
         default:
           Log.error("No such command.");
           break;

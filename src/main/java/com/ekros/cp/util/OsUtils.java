@@ -49,4 +49,12 @@ public class OsUtils {
     }
   }
 
+  public static boolean clear() {
+    try {
+      return Files.deleteIfExists(Path.of(path));
+    } catch (IOException e) {
+      e.printStackTrace();
+      return false;
+    }
+  }
 }

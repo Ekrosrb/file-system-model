@@ -62,10 +62,10 @@ public class FileSystem implements Serializable {
       Log.error("Incorrect fd [" + fd + "]");
     }
     String data = getFileData(fd);
-    if(size > data.length() || offset > data.length()){
+    if(size > data.length() || offset > data.length() || size+offset > data.length()){
       Log.error("Incorrect offset or size");
     }
-    data = data.substring(0, offset) + "1".repeat(offset+size) + data.substring(offset+size);
+    data = data.substring(0, offset) + "1".repeat(size) + data.substring(offset+size);
     int dataOffset = 0;
     for(Block block: getFileBlocks(openFiles.get(fd))) {
         block.setData(data.substring(dataOffset, dataOffset + Block.MAX_BLOCK_SIZE));
@@ -86,7 +86,7 @@ public class FileSystem implements Serializable {
 
   public boolean truncate(String name, int size) {
     DescriptorMetadata metadata = findDescriptorByName(name);
-    if (metadata == null) {
+    if (metadata == null || size < 0) {
       return false;
     }
     Descriptor descriptor = metadata.getDescriptor();
@@ -96,7 +96,6 @@ public class FileSystem implements Serializable {
       if (blocksIds.isEmpty()) {
         return false;
       }
-      blocksIds.forEach(blockId -> blocks.get(blockId).setUsed(true));
       descriptor.getBlockLinks().addAll(blocksIds);
     } else if (extension < 0) {
       while (extension <= -Block.MAX_BLOCK_SIZE) {
@@ -111,13 +110,18 @@ public class FileSystem implements Serializable {
 
   private List<Integer> getFreeBlocksIdsForExtension(int extension) {
     int count = (int) Math.ceil((double) extension / Block.MAX_BLOCK_SIZE);
+    if (count > blocks.size()){
+      return Collections.emptyList();
+    }
     List<Integer> blocksIds = new ArrayList<>();
     for (int i = 0; i < count; i++) {
       Integer id = getFreeBlockId();
       if (id == -1) {
+        blocksIds.forEach(bid->blocks.get(bid).setUsed(false));
         return Collections.emptyList();
       }
       blocksIds.add(id);
+      blocks.get(id).setUsed(true);
     }
     return blocksIds;
   }

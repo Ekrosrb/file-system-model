@@ -35,4 +35,8 @@ public class Descriptor implements Serializable {
     nameLinks.add(name);
   }
 
+  public void setSize(int size){
+    this.size = (int) (Block.MAX_BLOCK_SIZE*(Math.ceil(Math.abs((double) size/Block.MAX_BLOCK_SIZE))));
+  }
+
 }

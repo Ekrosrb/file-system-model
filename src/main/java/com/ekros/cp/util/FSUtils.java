@@ -32,6 +32,11 @@ public class FSUtils {
     return true;
   }
 
+  public static boolean clear(){
+    fileSystem = null;
+    return OsUtils.clear();
+  }
+
   public static boolean open(String name){
     boolean status = fileSystem.openFile(name);
     if(!status){
@@ -56,6 +61,7 @@ public class FSUtils {
 
   public static void whire(int fd, int offset, int size){
     fileSystem.write(fd, offset, size);
+    update();
   }
 
   public static void truncate(String name, int size){
@@ -65,6 +71,7 @@ public class FSUtils {
     }else{
       Log.error("Truncate failed.");
     }
+    update();
   }
 
   public static void link(String name1, String name2){
@@ -74,6 +81,7 @@ public class FSUtils {
     }else{
       Log.error("Link [" + name2 + "] not found.");
     }
+    update();
   }
 
   public static void unlink(String name){
@@ -83,6 +91,7 @@ public class FSUtils {
     }else{
       Log.error("Link [" + name + "] not found.");
     }
+    update();
   }
 
   public static String fstat(int id){
@@ -103,7 +112,9 @@ public class FSUtils {
   }
 
   private static void update() {
-    OsUtils.updateFs(serialize(fileSystem));
+    if(fileSystem != null) {
+      OsUtils.updateFs(serialize(fileSystem));
+    }
   }
 
   private static byte[] serialize(FileSystem fileSystem) {
