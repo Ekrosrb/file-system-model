@@ -63,7 +63,8 @@ public class FileSystem implements Serializable {
       return false;
     }
     String data = getFileData(fd);
-    if(size > data.length() || offset > data.length() || size+offset > data.length()){
+    if(size > data.length() || offset > data.length() || size+offset > data.length()
+        || offset < 0 || size <= 0){
       Log.error("Incorrect offset or size");
       return false;
     }
@@ -82,7 +83,7 @@ public class FileSystem implements Serializable {
       return "";
     }
     String data = getFileData(fd);
-    if(size > data.length() || offset > data.length()){
+    if(size > data.length() || offset > data.length() || size <= 0 || offset < 0){
       Log.error("Incorrect offset or size");
       return "";
     }
@@ -176,15 +177,9 @@ public class FileSystem implements Serializable {
     fileDescriptors.remove(descriptorMetadata.getKey());
     directory.getLinks().remove(descriptorMetadata.getKey());
 
-    List<Integer> descriptorFd = new ArrayList<>();
-    if (openFiles.containsValue(descriptor)) {
-      openFiles.forEach((key, value) -> {
-        if (value.equals(descriptor)) {
-          descriptorFd.add(key);
-        }
-      });
+    if(!openFiles.containsValue(descriptor)){
+      getFileBlocks(descriptor).forEach(block -> block.setUsed(false));
     }
-    descriptorFd.forEach(openFiles::remove);
     return true;
   }
 
@@ -201,7 +196,14 @@ public class FileSystem implements Serializable {
   }
 
   public boolean closeFile(int fd) {
-    return openFiles.remove(fd) != null;
+    Descriptor descriptor = openFiles.remove(fd);
+
+    if(descriptor != null && !openFiles.containsValue(descriptor) &&
+        !fileDescriptors.containsValue(descriptor)){
+      getFileBlocks(descriptor).forEach(block -> block.setUsed(false));
+    }
+
+    return descriptor != null;
   }
 
   public String getLinksInfo() {
@@ -211,10 +213,10 @@ public class FileSystem implements Serializable {
     return linksInfo.toString();
   }
 
-  public void format(int n) {
+  public boolean format(int n) {
     if (n > fileDescriptors.size()) {
       Log.error("Incorrect size [" + n + "] max value: " + fileDescriptors.size());
-      return;
+      return false;
     }
 
     Log.info("Descriptors before format: " + fileDescriptors.keySet());
@@ -229,7 +231,7 @@ public class FileSystem implements Serializable {
     }
 
     Log.info("Descriptors after format: " + fileDescriptors.keySet());
-
+    return true;
   }
 
   private int getFreeIndex(Map<Integer, Descriptor> map) {

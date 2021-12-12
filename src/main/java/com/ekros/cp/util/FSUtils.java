@@ -15,9 +15,10 @@ public class FSUtils {
 
   public static FileSystem fileSystem;
 
-  public static void mkfs(int n){
-    fileSystem.format(n);
+  public static boolean mkfs(int n){
+    boolean status = fileSystem.format(n);
     update();
+    return status;
   }
 
   public static boolean mount() {
@@ -111,8 +112,10 @@ public class FSUtils {
     return fileSystem.getFileDescriptors().get(id).toString();
   }
 
-  public static void ls(){
-    Log.info(fileSystem.getLinksInfo());
+  public static String ls(){
+    String linksInfo = fileSystem.getLinksInfo();
+    Log.info(linksInfo);
+    return linksInfo;
   }
 
   public static boolean create(String name){
