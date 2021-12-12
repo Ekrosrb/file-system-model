@@ -7,7 +7,6 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
-import java.util.List;
 import java.util.Objects;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
@@ -50,16 +49,16 @@ public class FSUtils {
     }
   }
 
-  public void read(int fd, int offset, int size){
+  public static void read(int fd, int offset, int size){
     String data = fileSystem.read(fd, offset, size);
     Log.info(data);
   }
 
-  public void whire(int fd, int offset, int size){
+  public static void whire(int fd, int offset, int size){
     fileSystem.write(fd, offset, size);
   }
 
-  public void truncate(String name, int size){
+  public static void truncate(String name, int size){
     boolean status = fileSystem.truncate(name, size);
     if(status){
       Log.info("Truncated [" + name + "] to " + size + " size.");

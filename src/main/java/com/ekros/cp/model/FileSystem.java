@@ -65,11 +65,12 @@ public class FileSystem implements Serializable {
     if(size > data.length() || offset > data.length()){
       Log.error("Incorrect offset or size");
     }
-    String newData = data.substring(0, offset) + "1".repeat(offset+size) + data.substring(offset+size);
-    Log.info(data);
+    data = data.substring(0, offset) + "1".repeat(offset+size) + data.substring(offset+size);
     int dataOffset = 0;
-    getFileBlocks(openFiles.get(fd)).forEach(block ->
-        block.setData(newData.substring(dataOffset, dataOffset + Block.MAX_BLOCK_SIZE)));
+    for(Block block: getFileBlocks(openFiles.get(fd))) {
+        block.setData(data.substring(dataOffset, dataOffset + Block.MAX_BLOCK_SIZE));
+        dataOffset += Block.MAX_BLOCK_SIZE;
+    }
   }
 
   public String read(int fd, int offset, int size) {
@@ -127,7 +128,9 @@ public class FileSystem implements Serializable {
     if (descriptorMetadata == null) {
       return false;
     }
-    openFiles.put(getFreeIndex(openFiles), descriptorMetadata.getDescriptor());
+    int index = getFreeIndex(openFiles);
+    openFiles.put(index, descriptorMetadata.getDescriptor());
+    Log.info("File [" + name + "] open with fd " + index);
     return true;
   }
 

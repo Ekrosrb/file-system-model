@@ -31,7 +31,7 @@ public class Console {
           isWork = false;
           break;
         case "mkfs":
-          FSUtils.mkfs(toInt(command.args.get(0)));
+          FSUtils.mkfs(toInt(command.next()));
           Log.info("Formatted.");
           break;
         case "mount":
@@ -41,27 +41,37 @@ public class Console {
           Log.info("Unmount status: " + FSUtils.unmount());
           break;
         case "fstat":
-          FSUtils.fstat(toInt(command.args.get(0)));
+          FSUtils.fstat(toInt(command.next()));
           break;
         case "ls":
           FSUtils.ls();
           break;
         case "create":
-          Log.info("Create status: " + FSUtils.create(command.args.get(0)));
+          Log.info("Create status: " + FSUtils.create(command.next()));
           break;
         case "open":
-          Log.info("Open status: " + FSUtils.open(command.args.get(0)));
+          Log.info("Open status: " + FSUtils.open(command.next()));
           break;
         case "close":
-          FSUtils.close(toInt(command.args.get(0)));
+          FSUtils.close(toInt(command.next()));
           break;
         case "link":
-          FSUtils.link(command.args.get(0), command.args.get(1));
+          FSUtils.link(command.next(), command.next());
           break;
         case "unlink":
-          FSUtils.unlink(command.args.get(0));
+          FSUtils.unlink(command.next());
+          break;
+        case "read":
+          FSUtils.read(toInt(command.next()), toInt(command.next()), toInt(command.next()));
+          break;
+        case "write":
+          FSUtils.whire(toInt(command.next()), toInt(command.next()), toInt(command.next()));
+          break;
+        case "truncate":
+          FSUtils.truncate(command.next(), toInt(command.next()));
           break;
         default:
+          Log.error("No such command.");
           break;
       }
     }catch (Exception e){
@@ -88,9 +98,13 @@ public class Console {
 
     private String command;
     private List<String> args;
-
+    private int index = 0;
     public Command(String command) {
       init(command);
+    }
+
+    public String next(){
+      return args.get(index++);
     }
 
     private void init(String command) {
