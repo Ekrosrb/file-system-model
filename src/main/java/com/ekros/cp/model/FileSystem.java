@@ -8,8 +8,9 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Set;
 import java.util.stream.Collectors;
-import lombok.AllArgsConstructor;
 import lombok.Getter;
 
 @Getter
@@ -20,17 +21,33 @@ public class FileSystem implements Serializable {
   public static final transient int MAX_LINKS_AMOUNT = 3;
   public static final transient int MAX_FILE_NAME_LENGTH = 10;
 
-  private final Map<Integer, Descriptor> fileDescriptors;
+  private final Map<Integer, Descriptor> descriptors;
   private final List<Block> blocks;
   private final Descriptor directory;
   private final Map<Integer, Descriptor> openFiles;
 
   public FileSystem() {
-    directory = new Descriptor(true, null, null, 0);
-    fileDescriptors = new HashMap<>();
+    directory = new Descriptor(true, null, 0);
+    descriptors = new HashMap<>();
     blocks = new ArrayList<>();
     openFiles = new HashMap<>();
     init();
+  }
+
+//  public boolean changeDirectory(String path){
+//
+//  }
+
+  private Descriptor pathDescriptor(String path, Descriptor descriptor){
+    return null;
+  }
+
+  public boolean createDirectory(String name){
+    return true;
+  }
+
+  public boolean removeDirectory(String name){
+    return true;
   }
 
   private void init() {
@@ -50,10 +67,10 @@ public class FileSystem implements Serializable {
       return false;
     }
     blocks.get(blockId).setUsed(true);
-    Descriptor descriptor = new Descriptor(false, blockId, name, Block.MAX_BLOCK_SIZE);
-    int index = getFreeIndex(fileDescriptors);
-    directory.getLinks().add(index);
-    fileDescriptors.put(index, descriptor);
+    Descriptor descriptor = new Descriptor(false, blockId, Block.MAX_BLOCK_SIZE);
+    int index = getFreeIndex(descriptors);
+    directory.addDescriptor(name, descriptor);
+    descriptors.put(index, descriptor);
     return true;
   }
 
@@ -91,11 +108,11 @@ public class FileSystem implements Serializable {
   }
 
   public boolean truncate(String name, int size) {
-    DescriptorMetadata metadata = findDescriptorByName(name);
-    if (metadata == null || size < 0) {
+    Descriptor descriptor = directory.getByName(name);
+    if (descriptor == null || size < 0) {
       return false;
     }
-    Descriptor descriptor = metadata.getDescriptor();
+
     int extension = size - descriptor.getSize();
     if (extension > 0) {
       List<Integer> blocksIds = getFreeBlocksIdsForExtension(extension);
@@ -112,6 +129,98 @@ public class FileSystem implements Serializable {
     }
     descriptor.setSize(size);
     return true;
+  }
+
+  public boolean openFile(String name) {
+    Descriptor descriptor = directory.getByName(name);
+    if (descriptor == null || descriptor.isDirectory()) {
+      return false;
+    }
+    int index = getFreeIndex(openFiles);
+    openFiles.put(index, descriptor);
+    Log.info("File [" + name + "] open with fd " + index);
+    return true;
+  }
+
+  public boolean link(String name1, String name2) {
+    Descriptor descriptor = directory.getByName(name1);
+    if (descriptor == null || !checkName(name2)) {
+      return false;
+    }
+    directory.addDescriptor(name2, descriptor);
+    return true;
+  }
+
+  public boolean unlink(String name) {
+    Descriptor descriptor = directory.removeDescriptor(name);
+    if (descriptor == null) {
+      return false;
+    }
+
+    if(!directory.contains(descriptor)){
+      removeDescriptor(descriptor);
+    }
+
+    if(!openFiles.containsValue(descriptor)){
+      getFileBlocks(descriptor).forEach(block -> block.setUsed(false));
+    }
+    return true;
+  }
+
+  public boolean closeFile(int fd) {
+    Descriptor descriptor = openFiles.remove(fd);
+
+    if(descriptor != null && !openFiles.containsValue(descriptor) &&
+        !descriptors.containsValue(descriptor)){
+      getFileBlocks(descriptor).forEach(block -> block.setUsed(false));
+    }
+
+    return descriptor != null;
+  }
+
+  public String getLinksInfo() {
+
+    StringBuilder sb = new StringBuilder();
+
+    Set<Entry<String, Descriptor>> entries = directory.getNameLinks().entrySet();
+    for (Entry<String, Descriptor> entry : entries) {
+      int id = getDescriptorIndex(entry.getValue());
+      sb.append(entry.getKey()).append(" : ").append(id).append("\n");
+    }
+
+    return sb.toString();
+  }
+
+//  public boolean format(int n) {
+//    if (n > descriptors.size()) {
+//      Log.error("Incorrect size [" + n + "] max value: " + descriptors.size());
+//      return false;
+//    }
+//
+//    Iterator<Integer> keys = descriptors.keySet().iterator();
+//
+//    Log.info("Descriptors before format: " + descriptors.keySet());
+//
+//    for(int i = 0; i < n && keys.hasNext(); i++){
+//      Integer key = keys.next();
+//      Descriptor descriptor = descriptors.remove(key);
+//      Set<String> dirKeys = directory.getDescriptorLinks(descriptor);
+//      dirKeys.forEach(directory::removeDescriptor);
+//      List<Block> blocks = getFileBlocks(descriptor);
+//      blocks.forEach(block -> block.setUsed(false));
+//
+//    }
+//
+//    Log.info("Descriptors after format: " + descriptors.keySet());
+//    return true;
+//  }
+
+  private void removeDescriptor(Descriptor descriptor){
+    descriptors.entrySet().removeIf(entry-> descriptor.equals(entry.getValue()));
+  }
+
+  private List<Block> getFileBlocks(Descriptor descriptor) {
+    return descriptor.getBlockLinks().stream().map(blocks::get).collect(Collectors.toList());
   }
 
   private List<Integer> getFreeBlocksIdsForExtension(int extension) {
@@ -132,16 +241,36 @@ public class FileSystem implements Serializable {
     return blocksIds;
   }
 
-  public boolean openFile(String name) {
-    DescriptorMetadata descriptorMetadata = findDescriptorByName(name);
-
-    if (descriptorMetadata == null) {
-      return false;
+  private int getFreeIndex(Map<Integer, Descriptor> map) {
+    for (int i = 0; i < map.size(); i++) {
+      if (map.get(i) == null) {
+        return i;
+      }
     }
-    int index = getFreeIndex(openFiles);
-    openFiles.put(index, descriptorMetadata.getDescriptor());
-    Log.info("File [" + name + "] open with fd " + index);
-    return true;
+    return map.size();
+  }
+
+  private int getDescriptorIndex(Descriptor descriptor){
+    for (Entry<Integer, Descriptor> entry : descriptors.entrySet()) {
+      if(entry.getValue().equals(descriptor)){
+        return entry.getKey();
+      }
+    }
+    return -1;
+  }
+
+  private Integer getFreeBlockId() {
+    return blocks.indexOf(blocks.stream()
+        .filter(block -> !block.isUsed())
+        .findFirst().orElse(null));
+  }
+
+  private boolean checkName(String name) {
+    return name != null && name.length() <= MAX_FILE_NAME_LENGTH && !directory.contains(name);
+  }
+
+  private boolean isDescriptorsMax() {
+    return MAX_DESCRIPTORS == descriptors.size();
   }
 
   private String getFileData(int fd) {
@@ -153,125 +282,4 @@ public class FileSystem implements Serializable {
     return sb.toString();
   }
 
-  public boolean link(String name1, String name2) {
-    DescriptorMetadata descriptor = findDescriptorByName(name1);
-    if (descriptor == null || !checkName(name2)) {
-      return false;
-    }
-    descriptor.getDescriptor().addName(name2);
-    return true;
-  }
-
-  public boolean unlink(String name) {
-    DescriptorMetadata descriptorMetadata = findDescriptorByName(name);
-    if (descriptorMetadata == null) {
-      return false;
-    }
-    Descriptor descriptor = descriptorMetadata.getDescriptor();
-
-    if (descriptor.getNameLinks().size() > 1) {
-      descriptor.getNameLinks().remove(name);
-      return true;
-    }
-
-    fileDescriptors.remove(descriptorMetadata.getKey());
-    directory.getLinks().remove(descriptorMetadata.getKey());
-
-    if(!openFiles.containsValue(descriptor)){
-      getFileBlocks(descriptor).forEach(block -> block.setUsed(false));
-    }
-    return true;
-  }
-
-  private List<Block> getFileBlocks(Descriptor descriptor) {
-    return descriptor.getBlockLinks().stream().map(blocks::get).collect(Collectors.toList());
-  }
-
-  private DescriptorMetadata findDescriptorByName(String name) {
-    return directory.getLinks().stream()
-        .map(index -> new DescriptorMetadata(index, fileDescriptors.get(index)))
-        .filter(desc -> desc.getDescriptor().getNameLinks().contains(name))
-        .findFirst()
-        .orElse(null);
-  }
-
-  public boolean closeFile(int fd) {
-    Descriptor descriptor = openFiles.remove(fd);
-
-    if(descriptor != null && !openFiles.containsValue(descriptor) &&
-        !fileDescriptors.containsValue(descriptor)){
-      getFileBlocks(descriptor).forEach(block -> block.setUsed(false));
-    }
-
-    return descriptor != null;
-  }
-
-  public String getLinksInfo() {
-    StringBuilder linksInfo = new StringBuilder("\n");
-    fileDescriptors.forEach((key, value) -> value.getNameLinks()
-        .forEach(fValue -> linksInfo.append(key).append(":").append(fValue).append("\n")));
-    return linksInfo.toString();
-  }
-
-  public boolean format(int n) {
-    if (n > fileDescriptors.size()) {
-      Log.error("Incorrect size [" + n + "] max value: " + fileDescriptors.size());
-      return false;
-    }
-
-    Log.info("Descriptors before format: " + fileDescriptors.keySet());
-
-    Iterator<Integer> iterator = directory.getLinks().listIterator();
-
-    for (int i = 0; i < n && iterator.hasNext(); i++) {
-      Integer key = iterator.next();
-      getFileBlocks(fileDescriptors.get(key)).forEach(block -> block.setUsed(false));
-      fileDescriptors.remove(key);
-      iterator.remove();
-    }
-
-    Log.info("Descriptors after format: " + fileDescriptors.keySet());
-    return true;
-  }
-
-  private int getFreeIndex(Map<Integer, Descriptor> map) {
-    for (int i = 0; i < map.size(); i++) {
-      if (map.get(i) == null) {
-        return i;
-      }
-    }
-    return map.size();
-  }
-
-  private Integer getFreeBlockId() {
-    return blocks.indexOf(blocks.stream()
-        .filter(block -> !block.isUsed())
-        .findFirst().orElse(null));
-  }
-
-  private boolean checkName(String name) {
-    if (name == null || name.length() > MAX_FILE_NAME_LENGTH) {
-      return false;
-    }
-    for (int i : directory.getLinks()) {
-      Descriptor descriptor = fileDescriptors.get(i);
-      if (descriptor.getNameLinks().contains(name)) {
-        Log.error("Name " + name + " already exist.");
-        return false;
-      }
-    }
-    return true;
-  }
-
-  private boolean isDescriptorsMax() {
-    return MAX_DESCRIPTORS == fileDescriptors.size();
-  }
-
-  @Getter
-  @AllArgsConstructor
-  private static class DescriptorMetadata {
-
-    private Integer key;
-    private Descriptor descriptor;
-  }
 }

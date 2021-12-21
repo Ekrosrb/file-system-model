@@ -30,10 +30,10 @@ public class Console {
         case "exit":
           isWork = false;
           break;
-        case "mkfs":
-          FSUtils.mkfs(toInt(command.next()));
-          Log.info("Formatted.");
-          break;
+//        case "mkfs":
+//          FSUtils.mkfs(toInt(command.next()));
+//          Log.info("Formatted.");
+//          break;
         case "mount":
           Log.info("Mount status: " + FSUtils.mount());
           break;

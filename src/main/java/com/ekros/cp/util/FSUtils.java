@@ -15,11 +15,11 @@ public class FSUtils {
 
   public static FileSystem fileSystem;
 
-  public static boolean mkfs(int n){
-    boolean status = fileSystem.format(n);
-    update();
-    return status;
-  }
+//  public static boolean mkfs(int n){
+////    boolean status = fileSystem.format(n);
+////    update();
+////    return status;
+//  }
 
   public static boolean mount() {
     fileSystem = deserialize(OsUtils.readFs());
@@ -106,10 +106,10 @@ public class FSUtils {
   }
 
   public static String fstat(int id){
-    if(!fileSystem.getFileDescriptors().containsKey(id)){
+    if(!fileSystem.getDescriptors().containsKey(id)){
       return "Descriptor " + id + " not found.";
     }
-    return fileSystem.getFileDescriptors().get(id).toString();
+    return fileSystem.getDescriptors().get(id).toString();
   }
 
   public static String ls(){
