@@ -9,20 +9,24 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 import lombok.Getter;
-import lombok.ToString;
 
-@ToString
 @Getter
 public class Descriptor implements Serializable {
   private final boolean isDirectory;
+  private final boolean isSymlink;
   private int size;
+  private final Descriptor prev;
   private final Map<String, Descriptor> nameLinks;
   private final List<Integer> blockLinks;
+  private final String symlink;
 
-  public Descriptor(boolean isDirectory, Integer blockLink, int size){
+  public Descriptor(boolean isDirectory, boolean isSymlink, Integer blockLink, int size, Descriptor prev, String symlink){
     this.blockLinks = new ArrayList<>();
     this.isDirectory = isDirectory;
+    this.isSymlink = isSymlink;
     this.size = formatSize(size);
+    this.prev = prev;
+    this.symlink = symlink;
     nameLinks = new HashMap<>();
     if(blockLink != null){
       blockLinks.add(blockLink);
@@ -67,4 +71,11 @@ public class Descriptor implements Serializable {
     return (int) (Block.MAX_BLOCK_SIZE*(Math.ceil(Math.abs((double) size/Block.MAX_BLOCK_SIZE))));
   }
 
+  @Override
+  public String toString() {
+    return "Descriptor{" +
+        "isDirectory=" + isDirectory +
+        ", size=" + size +
+        '}';
+  }
 }

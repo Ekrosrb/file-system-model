@@ -84,22 +84,15 @@ class FSUtilsTest {
     assertFalse(FSUtils.unlink("test3"));
   }
 
-//  @Test
-//  public void testMkfs() {
-//    FSUtils.create("test");
-//    FSUtils.create("test2");
-//    FSUtils.create("test3");
-//    FSUtils.create("test4");
-//    FSUtils.mkfs(2);
-//    assertEquals(2, FSUtils.fileSystem.getDescriptors().size());
-//    assertTrue(FSUtils.create("test"));
-//    assertTrue(FSUtils.create("test2"));
-//    FSUtils.mkfs(0);
-//    assertEquals(4, FSUtils.fileSystem.getDescriptors().size());
-//    FSUtils.mkfs(4);
-//    assertEquals(0, FSUtils.fileSystem.getDescriptors().size());
-//    assertFalse(FSUtils.mkfs(FileSystem.MAX_DESCRIPTORS*2));
-//  }
+  @Test
+  public void testMkfs() {
+    FSUtils.create("test");
+    FSUtils.create("test2");
+    FSUtils.create("test3");
+    FSUtils.create("test4");
+    FSUtils.mkfs();
+    assertEquals(0, FSUtils.fileSystem.getDescriptors().size());
+  }
 
   @Test
   public void testOpenClose() {
