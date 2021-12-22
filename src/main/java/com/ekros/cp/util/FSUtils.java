@@ -15,12 +15,6 @@ public class FSUtils {
 
   public static FileSystem fileSystem;
 
-  public static boolean mkfs(int n){
-    boolean status = fileSystem.format(n);
-    update();
-    return status;
-  }
-
   public static boolean mount() {
     fileSystem = deserialize(OsUtils.readFs());
     return !Objects.isNull(fileSystem);
@@ -106,10 +100,39 @@ public class FSUtils {
   }
 
   public static String fstat(int id){
-    if(!fileSystem.getFileDescriptors().containsKey(id)){
+    if(!fileSystem.getDescriptors().containsKey(id)){
       return "Descriptor " + id + " not found.";
     }
-    return fileSystem.getFileDescriptors().get(id).toString();
+    return fileSystem.getDescriptors().get(id).toString();
+  }
+
+  public static void symlink(String str, String path){
+    boolean status = fileSystem.createSymlink(str, path);
+    update();
+    Log.info("symlink status: " + status);
+  }
+
+  public static boolean mkfs(){
+    boolean status = fileSystem.format();
+    update();
+    return status;
+  }
+
+  public static void mkdir(String path){
+    boolean status = fileSystem.createDirectory(path);
+    update();
+    Log.info("mkdir status: " + status);
+  }
+
+  public static void rmdir(String path){
+    boolean status = fileSystem.removeDirectory(path);
+    update();
+    Log.info("rmdir status: " + status);
+  }
+
+  public static void cd(String path){
+    boolean status = fileSystem.changeDirectory(path);
+    Log.info("cd status: " + status);
   }
 
   public static String ls(){

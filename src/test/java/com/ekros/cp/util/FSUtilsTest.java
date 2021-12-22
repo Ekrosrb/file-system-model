@@ -90,15 +90,8 @@ class FSUtilsTest {
     FSUtils.create("test2");
     FSUtils.create("test3");
     FSUtils.create("test4");
-    FSUtils.mkfs(2);
-    assertEquals(2, FSUtils.fileSystem.getFileDescriptors().size());
-    assertTrue(FSUtils.create("test"));
-    assertTrue(FSUtils.create("test2"));
-    FSUtils.mkfs(0);
-    assertEquals(4, FSUtils.fileSystem.getFileDescriptors().size());
-    FSUtils.mkfs(4);
-    assertEquals(0, FSUtils.fileSystem.getFileDescriptors().size());
-    assertFalse(FSUtils.mkfs(FileSystem.MAX_DESCRIPTORS*2));
+    FSUtils.mkfs();
+    assertEquals(0, FSUtils.fileSystem.getDescriptors().size());
   }
 
   @Test

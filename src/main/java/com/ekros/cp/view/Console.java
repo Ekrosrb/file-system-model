@@ -30,9 +30,17 @@ public class Console {
         case "exit":
           isWork = false;
           break;
-        case "mkfs":
-          FSUtils.mkfs(toInt(command.next()));
-          Log.info("Formatted.");
+        case "mkdir":
+          FSUtils.mkdir(command.next());
+          break;
+        case "rmdir":
+          FSUtils.rmdir(command.next());
+          break;
+        case "symlink":
+          FSUtils.symlink(command.next(), command.next());
+          break;
+        case "cd":
+          FSUtils.cd(command.next());
           break;
         case "mount":
           Log.info("Mount status: " + FSUtils.mount());
@@ -54,6 +62,10 @@ public class Console {
           break;
         case "close":
           FSUtils.close(toInt(command.next()));
+          break;
+        case "mkfs":
+          FSUtils.mkfs();
+          Log.info("Formatted.");
           break;
         case "link":
           FSUtils.link(command.next(), command.next());
